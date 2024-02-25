@@ -1,4 +1,4 @@
-import requests 
+import fitbit 
 import base64
 import csv
 
@@ -22,7 +22,7 @@ def make_requests():
                     'refresh_token': refresh_token
                     }
                #Get new access token and refresh token to make the call
-               response = requests.post(url, headers = headers, data = data)
+               response = fitbit.post(url, headers = headers, data = data)
                if response.status_code == 200:
                     tokens = response.json()
                     access_token, refresh_token = tokens.get('access_token'), tokens.get('refresh_token')
@@ -35,7 +35,7 @@ def make_requests():
                          'Authorization': f'Bearer {access_token}'
                     }
                     profile_url = 'https://api.fitbit.com/1/user/-/profile.json'
-                    profile_response = requests.get(profile_url, headers = profile_header)
+                    profile_response = fitbit.get(profile_url, headers = profile_header)
                     if profile_response.status_code == 200:
                         profile_data = profile_response.json()
                         print("Got information")
@@ -56,4 +56,6 @@ def make_requests():
         csv_writer = csv.writer(file)
         for entry in updated_rows:
             csv_writer.writerow(entry)
+
+make_requests()
                 
