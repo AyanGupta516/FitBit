@@ -1,5 +1,5 @@
 from flask import Flask, request
-import fitbit 
+import requests 
 import base64
 import csv
 
@@ -29,7 +29,7 @@ def fitbit_oauth2callback():
                 'redirect_uri': 'http://127.0.0.1:5000/fitbit/oauth2callback',
                 'code': code
                 }
-         response = fitbit.post(url, headers=headers, data=data)
+         response = requests.post(url, headers=headers, data=data)
          if response.status_code == 200:
               tokens = response.json()
               access_token, refresh_token = tokens.get('access_token'), tokens.get('refresh_token')
