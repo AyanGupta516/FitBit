@@ -53,17 +53,18 @@ def get_steps(header):
      if steps_response.status_code == 200:
           daily_steps = []
           steps_data = steps_response.json()
-          #Get weekend average
-          weekend_data_steps_avg = (float(steps_data['activities-steps'][-1]['value']) + float(steps_data['activities-steps'][-2]['value']))/2
-          #print(steps_data)
-          #Get weekday average
+          weekend_data_steps_total = 0
           weekday_data_steps_total = 0
-          for i in range(5):
-               weekday_data_steps_total += float(steps_data['activities-steps'][i]['value'])
-               weekday_data_steps_avg = weekday_data_steps_total/5
-               #print(weekday_data_steps_avg)
           for entry in steps_data['activities-steps']:
-               daily_steps.append(entry['value'])
+               date_object = datetime.strptime(entry['dateTime'], '%Y-%m-%d')
+               day_of_week = date_object.strftime("%A")
+               if day_of_week == 'Saturday' or day_of_week == 'Sunday':
+                    weekend_data_steps_total += float(entry['value'])
+               else:
+                    weekday_data_steps_total  += float(entry['value'])
+               daily_steps.append(round(float(entry['value']),2))
+          weekday_data_steps_avg = round(weekday_data_steps_total / 5, 2)
+          weekend_data_steps_avg = round(weekend_data_steps_total /2 , 2)
           return daily_steps, weekday_data_steps_avg, weekend_data_steps_avg
      else:
           return None
@@ -73,25 +74,27 @@ def get_steps(header):
 
 
 def get_activity(header):
-     minutes_lightly_active_url =f'https://api.fitbit.com/1/user/-/activities/minutesLightlyActive/date/{start_date_str}/{end_date_str}.json'
      minutes_fairly_active_url =f'https://api.fitbit.com/1/user/-/activities/minutesFairlyActive/date/{start_date_str}/{end_date_str}.json'
      minutes_very_active_url =f'https://api.fitbit.com/1/user/-/activities/minutesVeryActive/date/{start_date_str}/{end_date_str}.json'
-     light_activity_response = requests.get(minutes_lightly_active_url, headers = header)
      fairly_activity_response = requests.get(minutes_fairly_active_url, headers = header)
      very_activity_response = requests.get(minutes_very_active_url, headers = header)
-     if light_activity_response.status_code == 200 and fairly_activity_response.status_code == 200 and very_activity_response.status_code == 200:
-          light_activity_data = light_activity_response.json()
+     if fairly_activity_response.status_code == 200 and very_activity_response.status_code == 200:
           fairly_activity_data = fairly_activity_response.json()
           very_activity_data = very_activity_response.json()
-          weekend_activity_average = (float(light_activity_data['activities-minutesLightlyActive'][-1]['value']) + float(light_activity_data['activities-minutesLightlyActive'][-2]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][-1]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][-2]['value']) + float(very_activity_data['activities-minutesVeryActive'][-1]['value']) + float(very_activity_data['activities-minutesVeryActive'][-2]['value'])) / 2
           weekday_activity_total = 0
-          for i in range(5):
-               weekday_activity_total =  weekday_activity_total + float(very_activity_data['activities-minutesVeryActive'][i]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][i]['value']) + float(light_activity_data['activities-minutesLightlyActive'][i]['value'])
-          weekday_activity_average = weekday_activity_total / 5
+          weekend_activity_total = 0
           daily_activity = []
           for i in range(7):
-               day_activity = float(very_activity_data['activities-minutesVeryActive'][i]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][i]['value']) + float(light_activity_data['activities-minutesLightlyActive'][i]['value'])
-               daily_activity.append(day_activity)
+               date_object = datetime.strptime(very_activity_data['activities-minutesVeryActive'][i]['dateTime'], '%Y-%m-%d')
+               day_of_week = date_object.strftime("%A")
+               if day_of_week == 'Saturday' or day_of_week == 'Sunday':
+                    weekend_activity_total = weekend_activity_total + float(very_activity_data['activities-minutesVeryActive'][i]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][i]['value'])
+               else:
+                    weekday_activity_total = weekday_activity_total + float(very_activity_data['activities-minutesVeryActive'][i]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][i]['value'])
+               day_activity = float(very_activity_data['activities-minutesVeryActive'][i]['value']) + float(fairly_activity_data['activities-minutesFairlyActive'][i]['value'])
+               daily_activity.append(round(float(day_activity),2))
+               weekend_activity_average = round(weekend_activity_total / 2 , 2)
+               weekday_activity_average = round(weekday_activity_total / 5 , 2)
           return daily_activity, weekday_activity_average, weekend_activity_average
 
 
@@ -101,16 +104,135 @@ def get_distance(header):
      if distance_response.status_code == 200:
           daily_distance = []
           distance_data = distance_response.json()
-          weekend_distance_avg = (float(distance_data['activities-distance'][-1]['value']) + float(distance_data['activities-distance'][-2]['value'])) / 2
-          weekday_distance_total = 0
-          for i in range(5):
-               weekday_distance_total += float(distance_data['activities-distance'][i]['value'])
-          weekday_distance_avg = weekday_distance_total/5
+          weekend_distance_total, weekday_distance_total = 0,0 
           for entry in distance_data['activities-distance']:
-               daily_distance.append(entry['value'])
+               date_object = datetime.strptime(entry['dateTime'], '%Y-%m-%d')
+               day_of_week = date_object.strftime("%A")
+               if day_of_week == 'Saturday' or day_of_week == 'Sunday':
+                    weekend_distance_total += float(entry['value'])
+               else:
+                    weekday_distance_total  += float(entry['value'])
+               daily_distance.append(round(float(entry['value']),2))
+
+          weekend_distance_avg = round(weekend_distance_total / 2, 2)
+          weekday_distance_avg = round(weekday_distance_total / 5, 2)
+               
           return daily_distance, weekday_distance_avg, weekend_distance_avg
      else:
           return None
+
+def get_sleep_data(header):
+     sleep_url = f'https://api.fitbit.com/1.2/user/-/sleep/date/{start_date_str}/{end_date_str}.json'
+     sleep_response = requests.get(sleep_url, headers = header)
+     res = []
+     #Total sleep data
+     sleep_hours_by_date = {}
+     light_sleep_by_date = {}
+     deep_sleep_by_date = {}
+     current_date = start_date
+     for i in range(7):
+          sleep_hours_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
+          light_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
+          deep_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
+          current_date += timedelta(1)
+     if sleep_response.status_code == 200:
+          sleep_data = sleep_response.json()
+          sleep_entries = sleep_data['sleep']
+          for entry in sleep_entries:
+               date = entry['dateOfSleep']
+               #Total Sleep 
+               sleep_time = float(entry['minutesAsleep']) / 60.0
+               sleep_hours_by_date[date] = round(sleep_time, 2)
+
+               sleep_level_data = entry['levels']['data']
+               for level_entry in sleep_level_data:
+                    if level_entry['level'] == 'deep' or level_entry['level'] == 'asleep':
+                         deep_sleep_by_date[date] = round(float(level_entry['seconds']) / 3600, 2)
+                    elif level_entry['level'] == 'light' or level_entry['level'] == 'restless':
+                         light_sleep_by_date[date] = round(float(level_entry['seconds']) / 3600, 2)
+               
+          weekday_total_sleep, weekend_total_sleep = 0, 0
+          weekday_days_sleep, weekend_days_sleep = 0, 0
+
+          weekday_total_light_sleep, weekend_total_light_sleep = 0, 0
+          weekday_days_light_sleep, weekend_days_light_sleep = 0, 0
+               
+          weekday_total_deep_sleep, weekend_total_deep_sleep = 0, 0
+          weekday_days_deep_sleep, weekend_days_deep_sleep = 0, 0
+
+          for entry in sleep_hours_by_date:
+               if sleep_hours_by_date[entry] != 'NA':
+                    date_object = datetime.strptime(entry, '%Y-%m-%d')
+                    day_of_week = date_object.strftime("%A")
+                    if day_of_week == "Sunday" or day_of_week == 'Saturday':
+                         weekend_days_sleep += 1
+                         weekend_total_sleep += sleep_hours_by_date[entry]
+                    else:
+                         weekday_days_sleep += 1
+                         weekday_total_sleep += sleep_hours_by_date[entry]
+
+               if light_sleep_by_date[entry] != 'NA':
+                    date_object = datetime.strptime(entry, '%Y-%m-%d')
+                    day_of_week = date_object.strftime("%A")
+                    if day_of_week == "Sunday" or day_of_week == 'Saturday':
+                         weekend_days_light_sleep += 1
+                         weekend_total_light_sleep +=  light_sleep_by_date[entry]
+                    else:
+                         weekday_days_light_sleep += 1
+                         weekday_total_light_sleep +=  light_sleep_by_date[entry]
+
+               if deep_sleep_by_date[entry] != 'NA':
+                         date_object = datetime.strptime(entry, '%Y-%m-%d')
+                         day_of_week = date_object.strftime("%A")
+                         if day_of_week == "Sunday" or day_of_week == 'Saturday':
+                              weekend_days_deep_sleep += 1
+                              weekend_total_deep_sleep +=  deep_sleep_by_date[entry]
+                         else:
+                              weekday_days_deep_sleep += 1
+                              weekday_total_deep_sleep +=  deep_sleep_by_date[entry]
+          
+          if weekday_days_sleep == 0:
+               average_weekday_total_sleep = 'NA'
+          else:
+               average_weekday_total_sleep = weekday_total_sleep / weekday_days_sleep
+          
+          if weekend_days_sleep == 0:
+               average_weekend_total_sleep = 'NA'
+          else:
+               average_weekend_total_sleep = weekend_total_sleep / weekend_days_sleep
+
+          if weekday_days_light_sleep == 0:
+               average_weekday_light_sleep = 'NA'
+          else:
+               average_weekday_light_sleep = weekday_total_light_sleep / weekday_days_light_sleep
+
+          if weekend_days_light_sleep == 0:
+               average_weekend_light_sleep = 'NA'
+          else:
+               average_weekend_light_sleep = weekend_total_light_sleep / weekend_days_light_sleep
+
+          if weekday_days_deep_sleep == 0:
+               average_weekday_deep_sleep = 'NA'
+          else:
+               average_weekday_deep_sleep = weekday_total_deep_sleep / weekday_days_deep_sleep
+
+          if weekend_days_deep_sleep == 0:
+               average_weekend_deep_sleep = 'NA'
+          else:
+               average_weekend_deep_sleep = weekend_total_deep_sleep / weekend_days_deep_sleep
+
+          res = []
+
+               
+          res.extend([average_weekday_total_sleep, average_weekend_total_sleep, average_weekday_light_sleep, average_weekend_light_sleep, average_weekday_deep_sleep, average_weekend_deep_sleep])
+
+          for entry in sleep_hours_by_date:
+               res.append(sleep_hours_by_date[entry])
+               res.append(light_sleep_by_date[entry])
+               res.append(deep_sleep_by_date[entry])
+          print(res)
+          return res
+     
 
 def update_csv_tokens(updates):
      with open('data/tokens.csv', mode = 'w', newline='') as file:
@@ -119,19 +241,31 @@ def update_csv_tokens(updates):
             csv_writer.writerow(entry)
 
 
-
-
 def make_requests():
     updated_tokens = []
-    data_headers = [
-    'Name', 'Average weekday daily steps', 'Average weekday active time', 'Average weekday miles traveled',
-    'Average weekend daily steps', 'Average weekend active time', 'Average weekend miles traveled'
+
+    activity_data_headers = [
+      'Name', 'Average weekday daily steps', 'Average weekend daily steps',
+      'Average weekday active time', 'Average weekend active time',
+      'Average weekday miles traveled', 'Average weekend miles traveled'
      ]
+    
+    sleep_data_headers = ['Name', 'Average weekday sleep', 'Average weekend sleep', 
+                          'Average weekday light sleep', 'Average weekend light sleep',
+                           'Average weekday deep sleep, Average weekend deep sleep' ]
+    for i in range(7):
+          date = end_date - timedelta(days=6-i)
+          date_str = date.strftime('%Y-%m-%d')
+          sleep_data_headers.extend([
+               f'{date_str} daily sleep',
+               f'{date_str} light sleep',
+               f'{date_str} deep sleep'
+          ])
 # Add headers for each day in the week for steps, activity, and distance
     for i in range(7):  # 0 to 6, for each day of the week
           date = end_date - timedelta(days=6-i)
           date_str = date.strftime('%Y-%m-%d')
-          data_headers.extend([
+          activity_data_headers.extend([
                f'{date_str} steps',
                f'{date_str} active time',
                f'{date_str} miles traveled'
@@ -139,7 +273,13 @@ def make_requests():
          
     with open('data/activity_data.csv', mode = 'w') as activity_file:
          csv_writer = csv.writer(activity_file)
-         csv_writer.writerow(data_headers)
+         csv_writer.writerow(activity_data_headers)
+     
+    with open('data/sleep_data.csv', mode = 'w') as sleep_file:
+         csv_writer = csv.writer(sleep_file)
+         csv_writer.writerow(sleep_data_headers)
+     
+     
 
     with open('data/tokens.csv', mode = 'r') as file:
           csv_reader = csv.reader(file)
@@ -152,7 +292,8 @@ def make_requests():
                     #Profile Call
                activity_header = {
                     'Authorization': f'Bearer {access_token}',
-                    'accept': 'application/json'
+                    'accept': 'application/json',
+                    'accept-language': 'en_US'
                }
                #Name
                name = get_name(access_token)
@@ -163,7 +304,7 @@ def make_requests():
                #distance
                daily_distances, weekday_distance_avg, weekend_distance_avg = get_distance(activity_header)
 
-               row_data = [name, weekday_data_steps_avg, weekday_activity_avg, weekday_distance_avg, weekend_data_steps_avg, weekend_activity_avg, weekend_distance_avg]
+               row_data = [name, weekday_data_steps_avg, weekend_data_steps_avg, weekday_activity_avg, weekend_activity_avg, weekday_distance_avg, weekend_distance_avg]
                for i in range(7):
                     row_data.extend([daily_steps[i], daily_activity[i], daily_distances[i]])
                
@@ -172,39 +313,16 @@ def make_requests():
                     csv_writer = csv.writer(activity_file)
                     csv_writer.writerow(row_data)
                
-                    # #Sleep 
-                    # sleep_url = f'https://api.fitbit.com/1.2/user/-/sleep/date/{start_date_str}/{end_date_str}.json'
-                    # sleep_response = requests.get(sleep_url, headers = activity_header)
-                    # if sleep_response.status_code == 200:
-                    #      sleep_data = sleep_response.json()
-                    #      weekend_avg_sleep_hours = (float(sleep_data['sleep'][-1]['minutesAsleep']) + float(sleep_data['sleep'][-2]['minutesAsleep']) / 2) / 60
-                    #      sunday_levels, saturday_levels = sleep_data['sleep'][-1]['levels']['data'], sleep_data['sleep'][-2]['levels']['data']
-                    #      weekend_deep_sleep_total, weekend_light_sleep_total = 0, 0
-                    #      for entry in sunday_levels:
-                    #           if entry['level'] == 'deep':
-                    #                weekend_deep_sleep_total += entry['seconds']
-                    #           if entry['level'] == 'light':
-                    #                weekend_light_sleep_total += entry['seconds']
-                    #      for entry in saturday_levels:
-                    #           if entry['level'] == 'deep':
-                    #                weekend_deep_sleep_total += entry['seconds']
-                    #           if entry['level'] == 'light':
-                    #                weekend_light_sleep_total += entry['seconds']
-                    #      weekend_light_avg, weekend_deep_avg = weekend_light_sleep_total / 3600, weekend_deep_sleep_total / 3600
-                    #      #Weekday sleep averages
-                    #      weekday_total_sleep_hours, weekday_deep_sleep_total, weekday_light_sleep_total = 0, 0, 0
-                    #      for i in range(5):
-                    #           current_day = sleep_data['sleep'][i]['levels']['data']
-                    #           weekday_total_sleep_hours += float(sleep_data['sleep'][i]['minutesAsleep'])
-                    #           for entry in current_day:
-                    #                if entry['level'] == 'deep':
-                    #                     weekday_deep_sleep_total += entry['seconds']
-                    #                if entry['level'] == 'light':
-                    #                      weekday_light_sleep_total += entry['seconds']
-                    #      weekday_light_avg, weekday_deep_avg, weekday_avg_sleep_hours  = weekday_light_sleep_total / 3600, weekday_deep_sleep_total / 3600, weekday_total_sleep_hours / 300
-                         
-                    # else:
-                    #      print("Could not retrieve sleep data")
+               #Sleep
+               sleep_data = get_sleep_data(activity_header)
+               if sleep_data != None:
+                    sleep_data.insert(0, name)
+                    with open ('data/sleep_data.csv', mode = 'a') as sleep_file:
+                         csv_writer = csv.writer(sleep_file)
+                         csv_writer.writerow(sleep_data)
+               else:
+                    print("NOTHING")
+
                     
 
      #Write new tokens to csv file 
