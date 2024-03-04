@@ -3,7 +3,7 @@ import base64
 import csv
 from datetime import datetime, timedelta
 from supabase import create_client, Client
-from config import supabase_key, supabase_url
+from supaconfig import supabase_key, supabase_url
 
 
 client_id = '23RW9Q'
