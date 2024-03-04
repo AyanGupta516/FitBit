@@ -2,6 +2,9 @@ import requests
 import base64
 import csv
 from datetime import datetime, timedelta
+from supabase import create_client, Client
+from config import supabase_key, supabase_url
+
 
 client_id = '23RW9Q'
 client_secret = '252bcb2f8ea01c138d866ddd0984fdcc'
@@ -15,11 +18,11 @@ start_date = end_date - timedelta(days=6)
 end_date_str = end_date.strftime('%Y-%m-%d')
 start_date_str = start_date.strftime('%Y-%m-%d')
 
-
+supabase: Client = create_client(supabase_url, supabase_key)
 
 def get_new_access_token(row):
      url = 'https://api.fitbit.com/oauth2/token'
-     refresh_token = row[1]
+     refresh_token = row['refresh_token']
      data = {
                'grant_type': 'refresh_token',
                'refresh_token': refresh_token
@@ -234,15 +237,9 @@ def get_sleep_data(header):
           return res
      
 
-def update_csv_tokens(updates):
-     with open('data/tokens.csv', mode = 'w', newline='') as file:
-        csv_writer = csv.writer(file)
-        for entry in updates:
-            csv_writer.writerow(entry)
 
 
 def make_requests():
-    updated_tokens = []
 
     activity_data_headers = [
       'Name', 'Average weekday daily steps', 'Average weekend daily steps',
@@ -279,17 +276,14 @@ def make_requests():
          csv_writer = csv.writer(sleep_file)
          csv_writer.writerow(sleep_data_headers)
      
-     
-
-    with open('data/tokens.csv', mode = 'r') as file:
-          csv_reader = csv.reader(file)
+    rows = supabase.table("access_tokens").select("*").execute().data
           #Iterate through all the rows
-          for row in csv_reader:
+    for row in rows:
+               current_id = row['id']
                access_token, refresh_token = get_new_access_token(row)
                if not access_token:
                     continue
-               updated_tokens.append([access_token, refresh_token])
-                    #Profile Call
+               data, count = supabase.table('access_tokens').update({'access_token': access_token, 'refresh_token' : refresh_token}).eq('id', current_id).execute()
                activity_header = {
                     'Authorization': f'Bearer {access_token}',
                     'accept': 'application/json',
@@ -326,7 +320,7 @@ def make_requests():
                     
 
      #Write new tokens to csv file 
-    update_csv_tokens(updated_tokens)
+    #update_csv_tokens(updated_tokens)
 
 make_requests()
                 

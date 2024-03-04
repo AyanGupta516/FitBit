@@ -1,7 +1,10 @@
 from flask import Flask, request
+from supabase import create_client, Client
+from config import supabase_key, supabase_url
 import requests 
 import base64
-import csv
+
+
 
 app = Flask(__name__)
 
@@ -13,6 +16,16 @@ headers = {
                'Authorization': f'Basic {basic_token}',
                 'Content-Type': 'application/x-www-form-urlencoded' }
 
+supabase: Client = create_client(supabase_url, supabase_key)
+
+def store_tokens(access_token, refresh_token):
+      data, count = supabase.table('access_tokens').upsert({
+       "access_token" : access_token, 
+       "refresh_token" : refresh_token
+    }).execute()
+      if data:
+          print(data)
+    
 
 
 @app.route('/')
@@ -35,9 +48,7 @@ def fitbit_oauth2callback():
               access_token, refresh_token = tokens.get('access_token'), tokens.get('refresh_token')
               print("Access Token:", access_token)
               print("Refresh Token:", refresh_token)
-              with open('data/tokens.csv', mode='a', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow([access_token, refresh_token])
+              store_tokens(access_token, refresh_token)
               return "SUCCESSFULLY CONNECTED"
          else:
               return "Something failed"

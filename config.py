@@ -1,0 +1,2 @@
+supabase_url = 'https://wdirrdnwvgxssboahcma.supabase.co'
+supabase_key = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkaXJyZG53dmd4c3Nib2FoY21hIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcwOTQ4OTA2NCwiZXhwIjoyMDI1MDY1MDY0fQ.ow5W7olwT5h16pIeNApBogMz1Fvxgd_EukJEtwXCg7A'
