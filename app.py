@@ -1,6 +1,6 @@
 from flask import Flask, request
 from supabase import create_client, Client
-from config import supabase_key, supabase_url
+from supaconfig import supabase_key, supabase_url
 import requests 
 import base64
 
