@@ -67,7 +67,7 @@ def get_steps(header):
                     weekday_data_steps_total  += float(entry['value'])
                daily_steps.append(round(float(entry['value']),2))
           weekday_data_steps_avg = round(weekday_data_steps_total / 5, 2)
-          weekend_data_steps_avg = round(weekend_data_steps_total /2 , 2)
+          weekend_data_steps_avg = round(weekend_data_steps_total / 2 , 2)
           return daily_steps, weekday_data_steps_avg, weekend_data_steps_avg
      else:
           return None
@@ -134,15 +134,16 @@ def get_sleep_data(header):
      deep_sleep_by_date = {}
      current_date = start_date
      for i in range(7):
-          sleep_hours_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
-          light_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
-          deep_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 'NA'
+          sleep_hours_by_date[current_date.strftime("%Y-%m-%d")] = 0
+          light_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 0
+          deep_sleep_by_date[current_date.strftime("%Y-%m-%d")] = 0
           current_date += timedelta(1)
      if sleep_response.status_code == 200:
           sleep_data = sleep_response.json()
           sleep_entries = sleep_data['sleep']
           for entry in sleep_entries:
-               date = entry['dateOfSleep']
+               date = entry['dateOfSleep'] 
+ 
                #Total Sleep 
                sleep_time = float(entry['minutesAsleep']) / 60.0
                sleep_hours_by_date[date] = round(sleep_time, 2)
@@ -150,9 +151,9 @@ def get_sleep_data(header):
                sleep_level_data = entry['levels']['data']
                for level_entry in sleep_level_data:
                     if level_entry['level'] == 'deep' or level_entry['level'] == 'asleep':
-                         deep_sleep_by_date[date] = round(float(level_entry['seconds']) / 3600, 2)
+                         deep_sleep_by_date[date] += round(float(level_entry['seconds']) / 3600, 2)
                     elif level_entry['level'] == 'light' or level_entry['level'] == 'restless':
-                         light_sleep_by_date[date] = round(float(level_entry['seconds']) / 3600, 2)
+                         light_sleep_by_date[date] += round(float(level_entry['seconds']) / 3600, 2)
                
           weekday_total_sleep, weekend_total_sleep = 0, 0
           weekday_days_sleep, weekend_days_sleep = 0, 0
@@ -164,7 +165,7 @@ def get_sleep_data(header):
           weekday_days_deep_sleep, weekend_days_deep_sleep = 0, 0
 
           for entry in sleep_hours_by_date:
-               if sleep_hours_by_date[entry] != 'NA':
+               if sleep_hours_by_date[entry] != 0:
                     date_object = datetime.strptime(entry, '%Y-%m-%d')
                     day_of_week = date_object.strftime("%A")
                     if day_of_week == "Sunday" or day_of_week == 'Saturday':
@@ -174,7 +175,7 @@ def get_sleep_data(header):
                          weekday_days_sleep += 1
                          weekday_total_sleep += sleep_hours_by_date[entry]
 
-               if light_sleep_by_date[entry] != 'NA':
+               if light_sleep_by_date[entry] != 0:
                     date_object = datetime.strptime(entry, '%Y-%m-%d')
                     day_of_week = date_object.strftime("%A")
                     if day_of_week == "Sunday" or day_of_week == 'Saturday':
@@ -184,7 +185,7 @@ def get_sleep_data(header):
                          weekday_days_light_sleep += 1
                          weekday_total_light_sleep +=  light_sleep_by_date[entry]
 
-               if deep_sleep_by_date[entry] != 'NA':
+               if deep_sleep_by_date[entry] != 0:
                          date_object = datetime.strptime(entry, '%Y-%m-%d')
                          day_of_week = date_object.strftime("%A")
                          if day_of_week == "Sunday" or day_of_week == 'Saturday':
@@ -279,6 +280,7 @@ def make_requests():
     rows = supabase.table("access_tokens").select("*").execute().data
           #Iterate through all the rows
     for row in rows:
+               print("I am here")
                current_id = row['id']
                access_token, refresh_token = get_new_access_token(row)
                if not access_token:
@@ -317,10 +319,7 @@ def make_requests():
                else:
                     print("NOTHING")
 
-                    
-
-     #Write new tokens to csv file 
-    #update_csv_tokens(updated_tokens)
+               
 
 make_requests()
                 

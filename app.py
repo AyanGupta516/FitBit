@@ -39,7 +39,7 @@ def fitbit_oauth2callback():
          url = 'https://api.fitbit.com/oauth2/token'
          data = {
                 'grant_type': 'authorization_code',
-                'redirect_uri': 'https://fit-bit-eight.vercel.app/fitbit/oauth2callback',
+                'redirect_uri': 'https://fit-bit-eight.vercel.app/fitbit_oauth2callback',
                 'code': code
                 }
          response = requests.post(url, headers=headers, data=data)
